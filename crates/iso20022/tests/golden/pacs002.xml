@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<BizMsg>
+  <AppHdr xmlns="urn:iso:std:iso:20022:tech:xsd:head.001.001.04">
+    <Fr>
+      <FIId>
+        <FinInstnId>
+          <BICFI>SIPCECEQ</BICFI>
+        </FinInstnId>
+      </FIId>
+    </Fr>
+    <To>
+      <FIId>
+        <FinInstnId>
+          <BICFI>RALFECEQ</BICFI>
+        </FinInstnId>
+      </FIId>
+    </To>
+    <BizMsgIdr>M0000000000000000000000000000002</BizMsgIdr>
+    <MsgDefIdr>pacs.002.001.10</MsgDefIdr>
+    <CreDt>2026-10-12T09:00:00.250000-05:00</CreDt>
+    <PssblDplct>true</PssblDplct>
+  </AppHdr>
+  <Document xmlns="urn:iso:std:iso:20022:tech:xsd:pacs.002.001.10">
+    <FIToFIPmtStsRpt>
+      <GrpHdr>
+        <MsgId>M0000000000000000000000000000002</MsgId>
+        <CreDtTm>2026-10-12T09:00:00.250000-05:00</CreDtTm>
+      </GrpHdr>
+      <TxInfAndSts>
+        <OrgnlInstrId>BALFECEQ12102026090000000001</OrgnlInstrId>
+        <TxSts>RJCT</TxSts>
+        <StsRsnInf>
+          <Rsn>
+            <Cd>AM04</Cd>
+          </Rsn>
+        </StsRsnInf>
+        <OrgnlTxRef>
+          <DbtrAgt>
+            <FinInstnId>
+              <BICFI>BALFECEQ</BICFI>
+            </FinInstnId>
+          </DbtrAgt>
+        </OrgnlTxRef>
+      </TxInfAndSts>
+    </FIToFIPmtStsRpt>
+  </Document>
+</BizMsg>

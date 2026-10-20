@@ -1,8 +1,8 @@
-# caudal-types — the kernel
+# veinte-types — the kernel
 
 **Owns** the catálogo vocabulary every domain shares ([ADR-0014](../../docs/architecture/adr/0014-kernel-types.md)): `Usd`, `Bic`, `PaymentId`, `PaymentState`, `ReasonCode` / `ReceivedReason`, `LlaveType`, and the `BusinessCalendar` with scheme time ([ADR-0017](../../docs/architecture/adr/0017-time-calendar-identifiers.md)).
 
-**Never depends on** another Caudal crate, or on anything that does I/O, reads a clock, or draws randomness. `jiff` is the only dependency.
+**Never depends on** another Veinte crate, or on anything that does I/O, reads a clock, or draws randomness. `jiff` is the only dependency.
 
 **Rules**
 

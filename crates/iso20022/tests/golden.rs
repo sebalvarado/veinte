@@ -1,9 +1,9 @@
 use std::path::PathBuf;
 
-use caudal_iso20022::{AppHdr, BusinessMessage, CreditTransfer, Document, Party, StatusReport, decode, encode, pretty};
-use caudal_types::{Bic, PaymentState, ReasonCode, ReceivedReason, Usd};
 use jiff::Timestamp;
 use proptest::prelude::*;
+use veinte_iso20022::{AppHdr, BusinessMessage, CreditTransfer, Document, Party, StatusReport, decode, encode, pretty};
+use veinte_types::{Bic, PaymentState, ReasonCode, ReceivedReason, Usd};
 
 fn bic(s: &str) -> Bic {
     s.parse().unwrap()

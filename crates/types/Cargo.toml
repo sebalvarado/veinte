@@ -1,6 +1,6 @@
 [package]
-name = "caudal-types"
-description = "Kernel types shared by every Caudal domain."
+name = "veinte-types"
+description = "Kernel types shared by every Veinte domain."
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true

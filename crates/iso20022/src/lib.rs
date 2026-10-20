@@ -1,11 +1,11 @@
 use std::fmt;
 
-use caudal_types::{Bic, PaymentState, ReasonCode, ReceivedReason, SCHEME_OFFSET, Usd};
 use jiff::Timestamp;
 use jiff::tz::TimeZone;
 use quick_xml::XmlVersion;
 use quick_xml::escape::escape;
 use quick_xml::events::Event;
+use veinte_types::{Bic, PaymentState, ReasonCode, ReceivedReason, SCHEME_OFFSET, Usd};
 
 pub const PACS_008: &str = "pacs.008.001.08";
 pub const PACS_002: &str = "pacs.002.001.10";
@@ -276,7 +276,7 @@ impl Fields {
     fn bic(&self, path: &str) -> Result<Bic, DecodeError> {
         self.get(path)?
             .parse()
-            .map_err(|e: caudal_types::InvalidValue| DecodeError::new(ReasonCode::Ch16, format!("{path}: {e}")))
+            .map_err(|e: veinte_types::InvalidValue| DecodeError::new(ReasonCode::Ch16, format!("{path}: {e}")))
     }
 
     fn time(&self, path: &str) -> Result<Timestamp, DecodeError> {

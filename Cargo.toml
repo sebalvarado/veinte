@@ -1,0 +1,25 @@
+[workspace]
+resolver = "3"
+members = ["crates/*"]
+
+[workspace.package]
+version = "0.0.0"
+edition = "2024"
+rust-version = "1.99"
+license = "Apache-2.0"
+repository = "https://github.com/sebalvarado/veinte"
+publish = false
+
+[workspace.lints.rust]
+unsafe_code = "forbid"
+
+[workspace.lints.clippy]
+all = { level = "warn", priority = -1 }
+
+[workspace.dependencies]
+veinte-types = { path = "crates/types" }
+veinte-iso20022 = { path = "crates/iso20022" }
+
+jiff = { version = "0.2", default-features = false, features = ["std"] }
+proptest = "1"
+quick-xml = "0.42"

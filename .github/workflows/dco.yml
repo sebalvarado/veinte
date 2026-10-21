@@ -1,0 +1,23 @@
+name: dco
+
+on:
+  pull_request:
+
+jobs:
+  signed-off:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Every commit carries Signed-off-by
+        env:
+          BASE: ${{ github.event.pull_request.base.sha }}
+          HEAD: ${{ github.event.pull_request.head.sha }}
+        run: |
+          missing=0
+          for c in $(git rev-list --no-merges "$BASE..$HEAD"); do
+            git show -s --format=%B "$c" | grep -q '^Signed-off-by: ' \
+              || { echo "$(git show -s --format='%h %s' "$c") has no Signed-off-by"; missing=1; }
+          done
+          exit $missing

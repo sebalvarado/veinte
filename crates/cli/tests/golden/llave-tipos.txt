@@ -1,0 +1,4 @@
+0001	número del celular
+0002	número de identificación
+0003	correo electrónico
+0004	alfanumérico

@@ -23,3 +23,4 @@ veinte-iso20022 = { path = "crates/iso20022" }
 jiff = { version = "0.2", default-features = false, features = ["std"] }
 proptest = "1"
 quick-xml = "0.42"
+clap = "4"

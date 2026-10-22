@@ -1,0 +1,3 @@
+identificador: AB1010202609300012XYZ
+ordenante: AB
+cita: Catálogo Operacional, §7, Tabla 14

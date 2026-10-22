@@ -1,0 +1,5 @@
+código: AC04
+interno: 0201
+descripción: 0201 (PGO RECHAZADO, CUENTA CERRADA)
+responsable: IR Beneficiario
+cita: Catálogo Operacional, §5 numeral 7, Tabla 12

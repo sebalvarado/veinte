@@ -1,0 +1,12 @@
+tipo: pacs.002.001.10
+de: SIPCECEQ
+para: RALFECEQ
+identificador: M0000000000000000000000000000002
+creado: 2026-10-12T14:00:00.25Z
+posible duplicado: sí
+identificador del mensaje: M0000000000000000000000000000002
+fecha de la confirmación: 2026-10-12T14:00:00.25Z
+identificador de la orden: BALFECEQ12102026090000000001
+institución ordenante: BALFECEQ
+estado: RJCT
+motivo: AM04 — 0207 (INSUFICIENCIA DE FONDOS)

@@ -1,0 +1,1 @@
+CH21: missing BizMsg/Document/FIToFICstmrCdtTrf/CdtTrfTxInf/PmtId/EndToEndId

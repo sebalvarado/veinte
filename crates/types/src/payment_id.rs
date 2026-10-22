@@ -1,4 +1,5 @@
 use std::fmt;
+use std::str::FromStr;
 
 use crate::{Bic, InvalidValue};
 
@@ -29,6 +30,37 @@ impl PaymentId {
 
     pub fn as_str(&self) -> &str {
         &self.code
+    }
+}
+
+/// Catálogo Operacional §7, Tabla 14: the ordering BIC, then 14 digits `DDMMAAAAHHMMSS`, then a
+/// serial or hash. The whole identifier is 20 to 35 printable ASCII characters.
+///
+/// [assumption] Tabla 14 does not fix the BIC length. Parsing succeeds only when exactly one
+/// prefix of 1 to 11 characters is a BIC that [`PaymentId::new`] accepts for the whole string.
+impl FromStr for PaymentId {
+    type Err = InvalidValue;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let mut found = None;
+        for len in 1..=s.len().min(11) {
+            if !s.is_char_boundary(len) {
+                continue;
+            }
+            let Ok(ordering) = s[..len].parse::<Bic>() else { continue };
+            let Ok(id) = Self::new(ordering, s) else { continue };
+            if found.is_some() {
+                return Err(InvalidValue::new(
+                    "PaymentId",
+                    "20 to 35 printable ASCII characters: the ordering BIC, then 14 digits DDMMAAAAHHMMSS, with only one possible BIC",
+                ));
+            }
+            found = Some(id);
+        }
+        found.ok_or(InvalidValue::new(
+            "PaymentId",
+            "20 to 35 printable ASCII characters: the ordering BIC, then 14 digits DDMMAAAAHHMMSS",
+        ))
     }
 }
 
@@ -66,6 +98,34 @@ mod tests {
     }
 
     #[test]
+    fn parses_the_tabla_14_string() {
+        // Catálogo Operacional §7, Tabla 14: ordering BIC, DDMMAAAAHHMMSS, then a serial or hash.
+        let id: PaymentId = "BALFECEQ10102026093000A1B2C3D4E5F6G".parse().unwrap();
+        assert_eq!(id, PaymentId::new(bic("BALFECEQ"), "BALFECEQ10102026093000A1B2C3D4E5F6G").unwrap());
+        assert_eq!(id.to_string().parse::<PaymentId>().unwrap(), id);
+    }
+
+    #[test]
+    fn parses_an_identifier_with_no_tail() {
+        let id: PaymentId = "BALFECEQ10102026093000".parse().unwrap();
+        assert_eq!(id.ordering(), bic("BALFECEQ"));
+        assert_eq!(id.as_str().len(), 22);
+    }
+
+    #[test]
+    fn refuses_an_ambiguous_bic_split() {
+        // [assumption] Tabla 14 does not fix the BIC length. A digit tail can be read as a longer BIC.
+        assert!("AB1010202609300012XYZ".parse::<PaymentId>().is_err());
+    }
+
+    #[test]
+    fn refuses_a_string_that_is_not_an_identifier() {
+        for s in ["", "BALFECEQ", "not-a-payment-id", "BALFECEQ1010202609300", "é10102026093000123456"] {
+            assert!(s.parse::<PaymentId>().is_err(), "{s:?} parsed");
+        }
+    }
+
+    #[test]
     fn refuses_bad_lengths_and_dates() {
         let b = bic("BALFECEQ");
         for code in [
@@ -85,6 +145,13 @@ mod tests {
             prop_assume!(code.len() >= 20);
             let id = PaymentId::new(bic(&b), &code).unwrap();
             prop_assert_eq!(id.as_str(), code.as_str());
+        }
+
+        #[test]
+        fn a_letter_bic_round_trips_through_from_str(b in "[A-Z]{8}", stamp in "[0-9]{14}", tail in "[A-Z]{0,13}") {
+            let code = format!("{b}{stamp}{tail}");
+            let id = PaymentId::new(bic(&b), &code).unwrap();
+            prop_assert_eq!(code.parse::<PaymentId>().unwrap(), id);
         }
     }
 }

@@ -1,1 +1,1 @@
-fecha y hora inválida: DDMMAAAAHHMMSS no cumple la Tabla 14 del Catálogo Operacional
+fecha y hora inválidas: los 14 dígitos DDMMAAAAHHMMSS tienen que nombrar una fecha y hora reales (Catálogo Operacional, §7, Tabla 14)

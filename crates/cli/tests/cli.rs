@@ -174,7 +174,10 @@ fn id_nuevo_rejects_a_malformed_bic() {
     let out = run(&["id", "nuevo", "--bic", "no", "--fecha-hora", "10102026093000", "--secuencial", "ABCD"]);
     assert_eq!(out.status.code(), Some(1));
     assert!(out.stdout.is_empty());
-    assert_eq!(String::from_utf8_lossy(&out.stderr), "BIC inválido: no cumple la Tabla 1 del Catálogo Operacional\n");
+    assert_eq!(
+        String::from_utf8_lossy(&out.stderr),
+        "BIC inválido: hasta 11 caracteres alfanuméricos (Catálogo Operacional, §3.1, Tabla 1, nota 3)\n"
+    );
 }
 
 #[test]
@@ -193,7 +196,7 @@ fn llave_tipo_rejects_an_unknown_code() {
     assert_eq!(out.status.code(), Some(1));
     assert_eq!(
         String::from_utf8_lossy(&out.stderr),
-        "tipo de llave inválido: no cumple la Tabla 1 del Catálogo Operacional\n"
+        "tipo de llave desconocido: los tipos son 0001, 0002, 0003 y 0004 (Catálogo Operacional, §3.1, Tabla 1)\n"
     );
 }
 
@@ -202,8 +205,7 @@ fn formatear_help_says_it_does_not_validate() {
     let out = run(&["formatear", "--help"]);
     assert!(out.status.success(), "{}", String::from_utf8_lossy(&out.stderr));
     let stdout = String::from_utf8(out.stdout).unwrap();
-    assert!(stdout.contains("No valida"), "{stdout}");
-    assert!(stdout.contains("validar"), "{stdout}");
+    assert!(stdout.contains("No valida el mensaje; para eso, usa veinte validar"), "{stdout}");
 }
 
 #[test]

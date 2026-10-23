@@ -1,1 +1,1 @@
-identificador inválido: no cumple la Tabla 14 del Catálogo Operacional
+identificador inválido: debe tener de 20 a 35 caracteres: el BIC ordenante, 14 dígitos con la fecha y hora (DDMMAAAAHHMMSS) y un número secuencial o hash (Catálogo Operacional, §7, Tabla 14)

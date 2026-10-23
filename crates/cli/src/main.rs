@@ -30,7 +30,7 @@ enum Command {
         #[arg(value_name = "archivo")]
         path: String,
     },
-    /// Imprime el XML con sangría. No valida el mensaje; use validar.
+    /// Imprime el XML con sangría. No valida el mensaje; para eso, usa veinte validar.
     #[command(name = "formatear")]
     Format {
         /// Ruta del archivo, o - para la entrada estándar.
@@ -169,10 +169,10 @@ fn rejected(err: DecodeError) -> String {
 
 fn invalid_value(err: InvalidValue) -> String {
     match err.kind() {
-        "PaymentId" => "identificador inválido: no cumple la Tabla 14 del Catálogo Operacional",
-        "PaymentDate" => "fecha y hora inválida: DDMMAAAAHHMMSS no cumple la Tabla 14 del Catálogo Operacional",
-        "Bic" => "BIC inválido: no cumple la Tabla 1 del Catálogo Operacional",
-        "LlaveType" => "tipo de llave inválido: no cumple la Tabla 1 del Catálogo Operacional",
+        "PaymentId" => "identificador inválido: debe tener de 20 a 35 caracteres: el BIC ordenante, 14 dígitos con la fecha y hora (DDMMAAAAHHMMSS) y un número secuencial o hash (Catálogo Operacional, §7, Tabla 14)",
+        "PaymentDate" => "fecha y hora inválidas: los 14 dígitos DDMMAAAAHHMMSS tienen que nombrar una fecha y hora reales (Catálogo Operacional, §7, Tabla 14)",
+        "Bic" => "BIC inválido: hasta 11 caracteres alfanuméricos (Catálogo Operacional, §3.1, Tabla 1, nota 3)",
+        "LlaveType" => "tipo de llave desconocido: los tipos son 0001, 0002, 0003 y 0004 (Catálogo Operacional, §3.1, Tabla 1)",
         _ => "valor inválido",
     }
     .to_owned()

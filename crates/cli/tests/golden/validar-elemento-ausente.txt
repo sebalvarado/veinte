@@ -1,0 +1,2 @@
+mensaje rechazado: CH21 — Elemento obligatorio ausente.
+detalle técnico: missing BizMsg/Document/FIToFICstmrCdtTrf/CdtTrfTxInf/PmtId/EndToEndId

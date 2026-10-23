@@ -1,0 +1,21 @@
+AC04	0201	IR Beneficiario	0201 (PGO RECHAZADO, CUENTA CERRADA)
+AC01	0202	IR Beneficiario	0202 (PGO RECHAZADO, CUENTA NO EXISTE)
+AC06	0203	IR Beneficiario	0203 (PGO RECHAZADO, CUENTA BLOQUEADA)
+AC05	0204	IR Beneficiario	0204 (PGO RECHAZADO, ORDEN BENEFICIARIO)
+DT01	0205	Todos	0205 (PGO RECHAZADO, POR NO CONFIRMACIÓN TIME OUT)
+AC07	0206	IR Beneficiario	0206 (PGO RECHAZADO, CUENTA INACTIVA)
+AM04	0207	SIP	0207 (INSUFICIENCIA DE FONDOS)
+MS01	0208	SIP	0208 (INFORMACIÓN INCORRECTA)
+AM11	—	SIP	Tipo de moneda no valida
+CH16	—	SIP	Contenido incorrecto
+CH21	—	SIP	Elemento obligatorio ausente.
+DT02	—	SIP	Fecha no válida
+DS0K	—	SIP	Número de transacciones no permitido
+CH20	—	SIP	Formato de monto incorrecto
+AM01	—	SIP	Monto cero
+DU01	—	SIP	La identificación del mensaje no es única
+AM02	—	SIP	Monto mayor al permitido
+AC02	—	SIP	Número de cuenta inválido
+TA01	—	SIP	Error de comunicación
+FF10	—	SIP	Problemas técnicos
+FF02	—	SIP	Sintaxis de mensaje incorrecto

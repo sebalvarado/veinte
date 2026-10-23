@@ -1,0 +1,5 @@
+código: AM11
+interno: —
+descripción: Tipo de moneda no valida
+responsable: SIP
+cita: Catálogo Operacional, §5 numeral 7, Tabla 12

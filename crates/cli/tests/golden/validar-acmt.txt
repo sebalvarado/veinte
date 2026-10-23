@@ -1,0 +1,2 @@
+mensaje rechazado: CH16 — Contenido incorrecto
+detalle técnico: unsupported message "acmt.998.001.bce01.in"

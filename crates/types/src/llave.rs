@@ -22,6 +22,18 @@ impl LlaveType {
             Self::Alfanumerico => "0004",
         }
     }
+
+    /// Catálogo Operacional §3.1, Tabla 1, column TIPO DE LLAVE.
+    ///
+    /// Tabla 1 also gives a field format for each type. Those formats are not represented here.
+    pub const fn description(self) -> &'static str {
+        match self {
+            Self::Celular => "número del celular",
+            Self::Identificacion => "número de identificación",
+            Self::Correo => "correo electrónico",
+            Self::Alfanumerico => "alfanumérico",
+        }
+    }
 }
 
 impl FromStr for LlaveType {
@@ -50,5 +62,25 @@ mod tests {
             assert_eq!(t.code().parse(), Ok(t));
         }
         assert!("0005".parse::<LlaveType>().is_err());
+    }
+
+    #[test]
+    fn celular_is_tabla_1() {
+        assert_eq!(LlaveType::Celular.description(), "número del celular");
+    }
+
+    #[test]
+    fn identificacion_is_tabla_1() {
+        assert_eq!(LlaveType::Identificacion.description(), "número de identificación");
+    }
+
+    #[test]
+    fn correo_is_tabla_1() {
+        assert_eq!(LlaveType::Correo.description(), "correo electrónico");
+    }
+
+    #[test]
+    fn alfanumerico_is_tabla_1() {
+        assert_eq!(LlaveType::Alfanumerico.description(), "alfanumérico");
     }
 }

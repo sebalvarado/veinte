@@ -1,0 +1,21 @@
+[package]
+name = "veinte-cli"
+description = "Command-line tool for Veinte messages, reason codes, and identifiers."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+publish.workspace = true
+
+[[bin]]
+name = "veinte"
+path = "src/main.rs"
+
+[dependencies]
+veinte-types.workspace = true
+veinte-iso20022.workspace = true
+clap = { workspace = true, features = ["derive"] }
+
+[lints]
+workspace = true

@@ -119,7 +119,6 @@ fn dispatch(command: Command) -> Result<(), String> {
         Command::Explain { code, all } => explain(code, all),
         Command::Id { command } => match command {
             IdCommand::New { bic, fecha_hora, secuencial } => {
-                fecha_valida(&fecha_hora)?;
                 print_id(&build_id(&bic, &format!("{bic}{fecha_hora}{secuencial}"))?);
                 Ok(())
             }
@@ -204,6 +203,7 @@ fn otro_detalle(detail: &str) -> String {
 fn valor_invalido(err: InvalidValue) -> String {
     match err.kind() {
         "PaymentId" => "identificador inválido: no cumple la Tabla 14 del Catálogo Operacional",
+        "PaymentDate" => "fecha y hora inválida: DDMMAAAAHHMMSS no cumple la Tabla 14 del Catálogo Operacional",
         "Bic" => "BIC inválido: no cumple la Tabla 1 del Catálogo Operacional",
         "LlaveType" => "tipo de llave inválido: no cumple la Tabla 1 del Catálogo Operacional",
         _ => "valor inválido",
@@ -290,20 +290,6 @@ fn explain(code: Option<String>, all: bool) -> Result<(), String> {
 
 fn find_reason(code: &str) -> Option<ReasonCode> {
     ReasonCode::ALL.into_iter().find(|reason| reason.code() == code || reason.internal() == Some(code))
-}
-
-fn fecha_valida(stamp: &str) -> Result<(), String> {
-    let bytes = stamp.as_bytes();
-    let digits = bytes.len() == 14 && bytes.iter().copied().all(|b| b.is_ascii_digit());
-    let ok = digits && {
-        let two = |at: usize| u16::from(bytes[at] - b'0') * 10 + u16::from(bytes[at + 1] - b'0');
-        (1..=31).contains(&two(0)) && (1..=12).contains(&two(2)) && two(8) <= 23 && two(10) <= 59 && two(12) <= 59
-    };
-    if ok {
-        Ok(())
-    } else {
-        Err("fecha y hora inválida: DDMMAAAAHHMMSS no cumple la Tabla 14 del Catálogo Operacional".to_owned())
-    }
 }
 
 fn build_id(bic: &str, code: &str) -> Result<PaymentId, String> {

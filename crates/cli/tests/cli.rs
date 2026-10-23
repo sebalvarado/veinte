@@ -158,7 +158,7 @@ fn id_nuevo_accepts_an_explicit_bic_when_the_string_is_ambiguous() {
 
 #[test]
 fn id_revisar_rejects_an_ambiguous_id() {
-    assert_err(&run(&["id", "revisar", "AB1010202609300012XYZ"]), "id-revisar-invalido.txt");
+    assert_err(&run(&["id", "revisar", "AB10102026093000093000X"]), "id-revisar-invalido.txt");
 }
 
 #[test]

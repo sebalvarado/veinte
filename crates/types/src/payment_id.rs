@@ -1,6 +1,8 @@
 use std::fmt;
 use std::str::FromStr;
 
+use jiff::civil::DateTime;
+
 use crate::{Bic, InvalidValue};
 
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -11,15 +13,23 @@ pub struct PaymentId {
 
 impl PaymentId {
     pub fn new(ordering: Bic, code: &str) -> Result<Self, InvalidValue> {
-        let rest = code.strip_prefix(ordering.as_str());
-        let valid = (20..=35).contains(&code.len())
+        // Catálogo Operacional §7, Tabla 14. The stamp is a civil date and time, with no offset.
+        let shape = InvalidValue::new(
+            "PaymentId",
+            "20 to 35 printable ASCII characters: the ordering BIC, then 14 digits DDMMAAAAHHMMSS",
+        );
+        let Some(rest) = code.strip_prefix(ordering.as_str()) else {
+            return Err(shape);
+        };
+        let shaped = (20..=35).contains(&code.len())
             && code.bytes().all(|b| b.is_ascii_graphic())
-            && rest.is_some_and(|r| r.len() >= 14 && r.bytes().take(14).all(|b| b.is_ascii_digit()));
-        if !valid {
-            return Err(InvalidValue::new(
-                "PaymentId",
-                "20 to 35 printable ASCII characters: the ordering BIC, then 14 digits DDMMAAAAHHMMSS",
-            ));
+            && rest.len() >= 14
+            && rest.as_bytes()[..14].iter().all(u8::is_ascii_digit);
+        if !shaped {
+            return Err(shape);
+        }
+        if !real_stamp(&rest[..14]) {
+            return Err(InvalidValue::new("PaymentDate", "14 digits DDMMAAAAHHMMSS that name a real date and time"));
         }
         Ok(Self { ordering, code: code.into() })
     }
@@ -31,6 +41,12 @@ impl PaymentId {
     pub fn as_str(&self) -> &str {
         &self.code
     }
+}
+
+fn real_stamp(stamp: &str) -> bool {
+    let n = |start: usize, end: usize| stamp[start..end].parse::<i16>().unwrap_or(i16::MAX);
+    let narrow = |start: usize, end: usize| i8::try_from(n(start, end)).unwrap_or(i8::MAX);
+    DateTime::new(n(4, 8), narrow(2, 4), narrow(0, 2), narrow(8, 10), narrow(10, 12), narrow(12, 14), 0).is_ok()
 }
 
 /// Catálogo Operacional §7, Tabla 14: the ordering BIC, then 14 digits `DDMMAAAAHHMMSS`, then a
@@ -114,8 +130,9 @@ mod tests {
 
     #[test]
     fn refuses_an_ambiguous_bic_split() {
-        // [assumption] Tabla 14 does not fix the BIC length. A digit tail can be read as a longer BIC.
-        assert!("AB1010202609300012XYZ".parse::<PaymentId>().is_err());
+        // [assumption] Tabla 14 does not fix the BIC length. A digit tail can be read as a longer BIC
+        // when that shift is also a real DDMMAAAAHHMMSS.
+        assert!("AB10102026093000093000X".parse::<PaymentId>().is_err());
     }
 
     #[test]
@@ -123,6 +140,18 @@ mod tests {
         for s in ["", "BALFECEQ", "not-a-payment-id", "BALFECEQ1010202609300", "é10102026093000123456"] {
             assert!(s.parse::<PaymentId>().is_err(), "{s:?} parsed");
         }
+    }
+
+    #[test]
+    fn rejects_a_stamp_that_is_not_a_real_date() {
+        // Catálogo Operacional §7, Tabla 14: the 14 digits are a civil DDMMAAAAHHMMSS.
+        let b = bic("BALFECEQ");
+        let err = PaymentId::new(b, "BALFECEQ31022026093000A1").unwrap_err();
+        assert_eq!(err.kind(), "PaymentDate");
+        assert_eq!(PaymentId::new(b, "BALFECEQ29022026093000A1").unwrap_err().kind(), "PaymentDate");
+        assert!(PaymentId::new(b, "BALFECEQ29022024093000A1").is_ok());
+        assert_eq!(PaymentId::new(b, "BALFECEQ10102026243000A1").unwrap_err().kind(), "PaymentDate");
+        assert_eq!(PaymentId::new(b, "BALFECEQ1010202609300XA1").unwrap_err().kind(), "PaymentId");
     }
 
     #[test]
@@ -140,7 +169,17 @@ mod tests {
 
     proptest! {
         #[test]
-        fn accepts_every_well_formed_code(b in "[A-Z0-9]{1,11}", stamp in "[0-9]{14}", tail in "[A-Z2-7]{0,20}") {
+        fn accepts_every_well_formed_code(
+            b in "[A-Z0-9]{1,11}",
+            day in 1u8..=28,
+            month in 1u8..=12,
+            year in 2020u16..=2030,
+            hour in 0u8..=23,
+            minute in 0u8..=59,
+            second in 0u8..=59,
+            tail in "[A-Z2-7]{0,20}",
+        ) {
+            let stamp = format!("{day:02}{month:02}{year:04}{hour:02}{minute:02}{second:02}");
             let code: String = format!("{b}{stamp}{tail}").chars().take(35).collect();
             prop_assume!(code.len() >= 20);
             let id = PaymentId::new(bic(&b), &code).unwrap();
@@ -148,7 +187,17 @@ mod tests {
         }
 
         #[test]
-        fn a_letter_bic_round_trips_through_from_str(b in "[A-Z]{8}", stamp in "[0-9]{14}", tail in "[A-Z]{0,13}") {
+        fn a_letter_bic_round_trips_through_from_str(
+            b in "[A-Z]{8}",
+            day in 1u8..=28,
+            month in 1u8..=12,
+            year in 2020u16..=2030,
+            hour in 0u8..=23,
+            minute in 0u8..=59,
+            second in 0u8..=59,
+            tail in "[A-Z]{0,13}",
+        ) {
+            let stamp = format!("{day:02}{month:02}{year:04}{hour:02}{minute:02}{second:02}");
             let code = format!("{b}{stamp}{tail}");
             let id = PaymentId::new(bic(&b), &code).unwrap();
             prop_assert_eq!(code.parse::<PaymentId>().unwrap(), id);

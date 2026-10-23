@@ -1,1 +1,2 @@
-CH16: unsupported message "acmt.998.001.bce01.in"
+mensaje rechazado: CH16 — Contenido incorrecto
+detalle: acmt.998.001.bce01.in

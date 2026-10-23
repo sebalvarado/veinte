@@ -152,12 +152,7 @@ fn id_nuevo_accepts_an_explicit_bic_when_the_string_is_ambiguous() {
 
 #[test]
 fn id_revisar_rejects_an_ambiguous_id() {
-    let out = run(&["id", "revisar", "AB1010202609300012XYZ"]);
-    assert_eq!(out.status.code(), Some(1));
-    assert_eq!(
-        String::from_utf8_lossy(&out.stderr),
-        "identificador inválido: invalid PaymentId: 20 to 35 printable ASCII characters: the ordering BIC, then 14 digits DDMMAAAAHHMMSS, with only one possible BIC\n"
-    );
+    assert_err(&run(&["id", "revisar", "AB1010202609300012XYZ"]), "id-revisar-invalido.txt");
 }
 
 #[test]
@@ -167,8 +162,16 @@ fn id_nuevo_rejects_a_bic_that_does_not_match() {
     assert!(out.stdout.is_empty());
     assert_eq!(
         String::from_utf8_lossy(&out.stderr),
-        "no se pudo construir el identificador: invalid PaymentId: 20 to 35 printable ASCII characters: the ordering BIC, then 14 digits DDMMAAAAHHMMSS\n"
+        "identificador inválido: no cumple la Tabla 14 del Catálogo Operacional\n"
     );
+}
+
+#[test]
+fn id_nuevo_rejects_a_malformed_bic() {
+    let out = run(&["id", "nuevo", "--bic", "no", "--codigo", "no10102026093000ABCD"]);
+    assert_eq!(out.status.code(), Some(1));
+    assert!(out.stdout.is_empty());
+    assert_eq!(String::from_utf8_lossy(&out.stderr), "BIC inválido: no cumple la Tabla 1 del Catálogo Operacional\n");
 }
 
 #[test]
@@ -185,7 +188,10 @@ fn llave_tipo_checks_a_code() {
 fn llave_tipo_rejects_an_unknown_code() {
     let out = run(&["llave", "tipo", "0005"]);
     assert_eq!(out.status.code(), Some(1));
-    assert_eq!(String::from_utf8_lossy(&out.stderr), "tipo de llave desconocido: 0005\n");
+    assert_eq!(
+        String::from_utf8_lossy(&out.stderr),
+        "tipo de llave inválido: no cumple la Tabla 1 del Catálogo Operacional\n"
+    );
 }
 
 #[test]

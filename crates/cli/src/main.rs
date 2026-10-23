@@ -2,7 +2,7 @@ use std::io::{self, Read, Write};
 use std::process::ExitCode;
 
 use clap::{Parser, Subcommand};
-use veinte_iso20022::{BusinessMessage, Document, decode, pretty};
+use veinte_iso20022::{BusinessMessage, DecodeError, Document, decode, pretty};
 use veinte_types::{InvalidValue, LlaveType, PaymentId, ReasonCode, ReceivedReason};
 
 const TABLA_12: &str = "Catálogo Operacional, §5 numeral 7, Tabla 12";
@@ -120,7 +120,7 @@ fn dispatch(command: Command) -> Result<(), String> {
                 Ok(())
             }
             IdCommand::Check { id } => {
-                let id = id.parse().map_err(|e: InvalidValue| format!("identificador inválido: {e}"))?;
+                let id = id.parse().map_err(valor_invalido)?;
                 print_id(&id);
                 Ok(())
             }
@@ -133,7 +133,7 @@ fn dispatch(command: Command) -> Result<(), String> {
                 Ok(())
             }
             KeyCommand::Type { code } => {
-                let kind: LlaveType = code.parse().map_err(|_| format!("tipo de llave desconocido: {code}"))?;
+                let kind: LlaveType = code.parse().map_err(valor_invalido)?;
                 println!("código: {}", kind.code());
                 println!("tipo: {}", kind.description());
                 println!("cita: {TABLA_1}");
@@ -153,9 +153,58 @@ fn read(path: &str) -> Result<Vec<u8>, String> {
 }
 
 fn validate(bytes: &[u8]) -> Result<(), String> {
-    let message = decode(bytes).map_err(|e| e.to_string())?;
+    let message = decode(bytes).map_err(rechazo)?;
     print!("{}", report(&message));
     Ok(())
+}
+
+fn rechazo(err: DecodeError) -> String {
+    let code = err.reason.code();
+    let description = err.reason.description();
+    format!("mensaje rechazado: {code} — {description}\ndetalle: {}", detalle(&err.detail))
+}
+
+fn detalle(detail: &str) -> String {
+    if let Some(path) = detail.strip_prefix("missing ") {
+        return path.to_owned();
+    }
+    if let Some(message) = detail.strip_prefix("unsupported message ") {
+        return message.trim_matches('"').to_owned();
+    }
+    if let Some((path, _)) = detail.split_once(": ").filter(|(path, _)| path.contains('/')) {
+        return path.to_owned();
+    }
+    match detail {
+        "empty element" => "elemento vacío",
+        "unclosed element" => "elemento sin cerrar",
+        "the currency is USD" => "la moneda es USD",
+        "sender and receiver are the same" => "el emisor y el receptor son el mismo",
+        _ => return otro_detalle(detail),
+    }
+    .to_owned()
+}
+
+fn otro_detalle(detail: &str) -> String {
+    if let Some(amount) = detail.strip_prefix("amount ") {
+        return format!("monto {}", amount.trim_matches('"'));
+    }
+    if let Some(status) = detail.strip_prefix("status ") {
+        return format!("estado {}", status.trim_matches('"'));
+    }
+    if let Some(reason) = detail.strip_prefix("reason ") {
+        return format!("motivo {}", reason.trim_matches('"'));
+    }
+    "sintaxis XML".to_owned()
+}
+
+fn valor_invalido(err: InvalidValue) -> String {
+    match err.kind() {
+        "PaymentId" => "identificador inválido: no cumple la Tabla 14 del Catálogo Operacional",
+        "Bic" => "BIC inválido: no cumple la Tabla 1 del Catálogo Operacional",
+        "LlaveType" => "tipo de llave inválido: no cumple la Tabla 1 del Catálogo Operacional",
+        _ => "valor inválido",
+    }
+    .to_owned()
 }
 
 fn report(message: &BusinessMessage) -> String {
@@ -240,8 +289,8 @@ fn find_reason(code: &str) -> Option<ReasonCode> {
 }
 
 fn build_id(bic: &str, code: &str) -> Result<PaymentId, String> {
-    let ordering = bic.parse().map_err(|e: InvalidValue| format!("no se pudo construir el identificador: {e}"))?;
-    PaymentId::new(ordering, code).map_err(|e| format!("no se pudo construir el identificador: {e}"))
+    let ordering = bic.parse().map_err(valor_invalido)?;
+    PaymentId::new(ordering, code).map_err(valor_invalido)
 }
 
 fn print_id(id: &PaymentId) {

@@ -71,10 +71,10 @@ enum IdCommand {
         bic: String,
         /// Fecha y hora DDMMAAAAHHMMSS. No consulta el reloj.
         #[arg(long = "fecha-hora")]
-        fecha_hora: String,
+        date_time: String,
         /// Número secuencial o hash.
-        #[arg(long)]
-        secuencial: String,
+        #[arg(long = "secuencial")]
+        serial: String,
     },
     /// Revisa un identificador ya armado.
     #[command(name = "revisar")]
@@ -118,12 +118,12 @@ fn dispatch(command: Command) -> Result<(), String> {
         }
         Command::Explain { code, all } => explain(code, all),
         Command::Id { command } => match command {
-            IdCommand::New { bic, fecha_hora, secuencial } => {
-                print_id(&build_id(&bic, &format!("{bic}{fecha_hora}{secuencial}"))?);
+            IdCommand::New { bic, date_time, serial } => {
+                print_id(&build_id(&bic, &format!("{bic}{date_time}{serial}"))?);
                 Ok(())
             }
             IdCommand::Check { id } => {
-                let id = id.parse().map_err(valor_invalido)?;
+                let id = id.parse().map_err(invalid_value)?;
                 print_id(&id);
                 Ok(())
             }
@@ -136,7 +136,7 @@ fn dispatch(command: Command) -> Result<(), String> {
                 Ok(())
             }
             KeyCommand::Type { code } => {
-                let kind: LlaveType = code.parse().map_err(valor_invalido)?;
+                let kind: LlaveType = code.parse().map_err(invalid_value)?;
                 println!("código: {}", kind.code());
                 println!("tipo: {}", kind.description());
                 println!("cita: {TABLA_1}");
@@ -156,18 +156,18 @@ fn read(path: &str) -> Result<Vec<u8>, String> {
 }
 
 fn validate(bytes: &[u8]) -> Result<(), String> {
-    let message = decode(bytes).map_err(rechazo)?;
+    let message = decode(bytes).map_err(rejected)?;
     print!("{}", report(&message));
     Ok(())
 }
 
-fn rechazo(err: DecodeError) -> String {
+fn rejected(err: DecodeError) -> String {
     let code = err.reason.code();
     let description = err.reason.description();
     format!("mensaje rechazado: {code} — {description}\ndetalle técnico: {}", err.detail)
 }
 
-fn valor_invalido(err: InvalidValue) -> String {
+fn invalid_value(err: InvalidValue) -> String {
     match err.kind() {
         "PaymentId" => "identificador inválido: no cumple la Tabla 14 del Catálogo Operacional",
         "PaymentDate" => "fecha y hora inválida: DDMMAAAAHHMMSS no cumple la Tabla 14 del Catálogo Operacional",
@@ -260,8 +260,8 @@ fn find_reason(code: &str) -> Option<ReasonCode> {
 }
 
 fn build_id(bic: &str, code: &str) -> Result<PaymentId, String> {
-    let ordering = bic.parse().map_err(valor_invalido)?;
-    PaymentId::new(ordering, code).map_err(valor_invalido)
+    let ordering = bic.parse().map_err(invalid_value)?;
+    PaymentId::new(ordering, code).map_err(invalid_value)
 }
 
 fn print_id(id: &PaymentId) {

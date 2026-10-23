@@ -164,40 +164,7 @@ fn validate(bytes: &[u8]) -> Result<(), String> {
 fn rechazo(err: DecodeError) -> String {
     let code = err.reason.code();
     let description = err.reason.description();
-    format!("mensaje rechazado: {code} — {description}\ndetalle: {}", detalle(&err.detail))
-}
-
-fn detalle(detail: &str) -> String {
-    if let Some(path) = detail.strip_prefix("missing ") {
-        return path.to_owned();
-    }
-    if let Some(message) = detail.strip_prefix("unsupported message ") {
-        return message.trim_matches('"').to_owned();
-    }
-    if let Some((path, _)) = detail.split_once(": ").filter(|(path, _)| path.contains('/')) {
-        return path.to_owned();
-    }
-    match detail {
-        "empty element" => "elemento vacío",
-        "unclosed element" => "elemento sin cerrar",
-        "the currency is USD" => "la moneda es USD",
-        "sender and receiver are the same" => "el emisor y el receptor son el mismo",
-        _ => return otro_detalle(detail),
-    }
-    .to_owned()
-}
-
-fn otro_detalle(detail: &str) -> String {
-    if let Some(amount) = detail.strip_prefix("amount ") {
-        return format!("monto {}", amount.trim_matches('"'));
-    }
-    if let Some(status) = detail.strip_prefix("status ") {
-        return format!("estado {}", status.trim_matches('"'));
-    }
-    if let Some(reason) = detail.strip_prefix("reason ") {
-        return format!("motivo {}", reason.trim_matches('"'));
-    }
-    "sintaxis XML".to_owned()
+    format!("mensaje rechazado: {code} — {description}\ndetalle técnico: {}", err.detail)
 }
 
 fn valor_invalido(err: InvalidValue) -> String {

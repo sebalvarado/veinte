@@ -153,5 +153,27 @@ mod tests {
             let id = PaymentId::new(bic(&b), &code).unwrap();
             prop_assert_eq!(code.parse::<PaymentId>().unwrap(), id);
         }
+
+        // Catálogo Operacional §7, Tabla 14: the third column is a serial or a hash, so a digit tail is normal.
+        #[test]
+        fn a_numeric_serial_keeps_the_original_bic_or_fails(
+            b in "([A-Z0-9]{8}|[A-Z0-9]{11})",
+            day in 1u8..=28,
+            month in 1u8..=12,
+            year in 2020u16..=2030,
+            hour in 0u8..=23,
+            minute in 0u8..=59,
+            second in 0u8..=59,
+            tail in "[0-9]{0,13}",
+        ) {
+            let stamp = format!("{day:02}{month:02}{year:04}{hour:02}{minute:02}{second:02}");
+            let code = format!("{b}{stamp}{tail}");
+            prop_assume!((20..=35).contains(&code.len()));
+            let built = PaymentId::new(bic(&b), &code).unwrap();
+            // An ambiguous digit tail is an error. A success has to be this BIC.
+            if let Ok(parsed) = code.parse::<PaymentId>() {
+                prop_assert_eq!(parsed, built);
+            }
+        }
     }
 }

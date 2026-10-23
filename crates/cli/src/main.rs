@@ -30,7 +30,7 @@ enum Command {
         #[arg(value_name = "archivo")]
         path: String,
     },
-    /// Imprime el XML con sangría.
+    /// Imprime el XML con sangría. No valida el mensaje; use validar.
     #[command(name = "formatear")]
     Format {
         /// Ruta del archivo, o - para la entrada estándar.

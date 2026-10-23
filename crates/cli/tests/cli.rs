@@ -198,6 +198,15 @@ fn llave_tipo_rejects_an_unknown_code() {
 }
 
 #[test]
+fn formatear_help_says_it_does_not_validate() {
+    let out = run(&["formatear", "--help"]);
+    assert!(out.status.success(), "{}", String::from_utf8_lossy(&out.stderr));
+    let stdout = String::from_utf8(out.stdout).unwrap();
+    assert!(stdout.contains("No valida"), "{stdout}");
+    assert!(stdout.contains("validar"), "{stdout}");
+}
+
+#[test]
 fn help_keeps_the_non_affiliation_disclaimer() {
     let out = run(&["--help"]);
     assert!(out.status.success(), "{}", String::from_utf8_lossy(&out.stderr));

@@ -63,15 +63,18 @@ enum Command {
 
 #[derive(Subcommand)]
 enum IdCommand {
-    /// Construye un identificador a partir del BIC ordenante y el código completo.
+    /// Arma un identificador con el BIC, la fecha y hora, y el secuencial.
     #[command(name = "nuevo")]
     New {
         /// BIC de la institución ordenante.
         #[arg(long)]
         bic: String,
-        /// Identificador completo (Tabla 14). Debe comenzar con el BIC.
-        #[arg(long = "codigo")]
-        code: String,
+        /// Fecha y hora DDMMAAAAHHMMSS. No consulta el reloj.
+        #[arg(long = "fecha-hora")]
+        fecha_hora: String,
+        /// Número secuencial o hash.
+        #[arg(long)]
+        secuencial: String,
     },
     /// Revisa un identificador ya armado.
     #[command(name = "revisar")]
@@ -115,8 +118,9 @@ fn dispatch(command: Command) -> Result<(), String> {
         }
         Command::Explain { code, all } => explain(code, all),
         Command::Id { command } => match command {
-            IdCommand::New { bic, code } => {
-                print_id(&build_id(&bic, &code)?);
+            IdCommand::New { bic, fecha_hora, secuencial } => {
+                fecha_valida(&fecha_hora)?;
+                print_id(&build_id(&bic, &format!("{bic}{fecha_hora}{secuencial}"))?);
                 Ok(())
             }
             IdCommand::Check { id } => {
@@ -286,6 +290,20 @@ fn explain(code: Option<String>, all: bool) -> Result<(), String> {
 
 fn find_reason(code: &str) -> Option<ReasonCode> {
     ReasonCode::ALL.into_iter().find(|reason| reason.code() == code || reason.internal() == Some(code))
+}
+
+fn fecha_valida(stamp: &str) -> Result<(), String> {
+    let bytes = stamp.as_bytes();
+    let digits = bytes.len() == 14 && bytes.iter().copied().all(|b| b.is_ascii_digit());
+    let ok = digits && {
+        let two = |at: usize| u16::from(bytes[at] - b'0') * 10 + u16::from(bytes[at + 1] - b'0');
+        (1..=31).contains(&two(0)) && (1..=12).contains(&two(2)) && two(8) <= 23 && two(10) <= 59 && two(12) <= 59
+    };
+    if ok {
+        Ok(())
+    } else {
+        Err("fecha y hora inválida: DDMMAAAAHHMMSS no cumple la Tabla 14 del Catálogo Operacional".to_owned())
+    }
 }
 
 fn build_id(bic: &str, code: &str) -> Result<PaymentId, String> {

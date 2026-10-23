@@ -137,7 +137,10 @@ fn explicar_requires_a_code_or_todos() {
 
 #[test]
 fn id_nuevo_builds_a_payment_id() {
-    assert_ok(&run(&["id", "nuevo", "--bic", "BALFECEQ", "--codigo", "BALFECEQ10102026093000A1B2C3D4E5F6G"]), "id.txt");
+    assert_ok(
+        &run(&["id", "nuevo", "--bic", "BALFECEQ", "--fecha-hora", "10102026093000", "--secuencial", "A1B2C3D4E5F6G"]),
+        "id.txt",
+    );
 }
 
 #[test]
@@ -147,7 +150,10 @@ fn id_revisar_checks_a_payment_id() {
 
 #[test]
 fn id_nuevo_accepts_an_explicit_bic_when_the_string_is_ambiguous() {
-    assert_ok(&run(&["id", "nuevo", "--bic", "AB", "--codigo", "AB1010202609300012XYZ"]), "id-bic-explicito.txt");
+    assert_ok(
+        &run(&["id", "nuevo", "--bic", "AB", "--fecha-hora", "10102026093000", "--secuencial", "12XYZ"]),
+        "id-bic-explicito.txt",
+    );
 }
 
 #[test]
@@ -156,19 +162,16 @@ fn id_revisar_rejects_an_ambiguous_id() {
 }
 
 #[test]
-fn id_nuevo_rejects_a_bic_that_does_not_match() {
-    let out = run(&["id", "nuevo", "--bic", "CBETECEQ", "--codigo", "BALFECEQ10102026093000A1B2C3"]);
-    assert_eq!(out.status.code(), Some(1));
-    assert!(out.stdout.is_empty());
-    assert_eq!(
-        String::from_utf8_lossy(&out.stderr),
-        "identificador inválido: no cumple la Tabla 14 del Catálogo Operacional\n"
+fn id_nuevo_rejects_a_bad_date() {
+    assert_err(
+        &run(&["id", "nuevo", "--bic", "BALFECEQ", "--fecha-hora", "32102026093000", "--secuencial", "A1"]),
+        "id-fecha-invalida.txt",
     );
 }
 
 #[test]
 fn id_nuevo_rejects_a_malformed_bic() {
-    let out = run(&["id", "nuevo", "--bic", "no", "--codigo", "no10102026093000ABCD"]);
+    let out = run(&["id", "nuevo", "--bic", "no", "--fecha-hora", "10102026093000", "--secuencial", "ABCD"]);
     assert_eq!(out.status.code(), Some(1));
     assert!(out.stdout.is_empty());
     assert_eq!(String::from_utf8_lossy(&out.stderr), "BIC inválido: no cumple la Tabla 1 del Catálogo Operacional\n");

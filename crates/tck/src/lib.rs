@@ -189,7 +189,7 @@ impl Outcome {
             Self::PaymentRejected => "pago rechazado",
             Self::Allowed => "permitido",
             Self::NotAllowed => "no permitido",
-            Self::Lapsed => "vencida",
+            Self::Lapsed => "vencido",
             Self::InProcess => "en proceso",
             Self::Reconciling => "por conciliar",
             Self::PaymentInProcess => "pago en proceso",
@@ -252,7 +252,7 @@ pub fn drive(party: &mut impl Integrante, link: &Link<'_>) -> Vec<Finding> {
     } else {
         Outcome::Failed
     };
-    findings.push(line("ventana para confirmar la llave", window));
+    findings.push(line("plazo para confirmar el pago", window));
 
     for (stage, name) in [
         (Stage::EndToEnd, "tiempo de espera agotado (extremo a extremo)"),
@@ -264,7 +264,39 @@ pub fn drive(party: &mut impl Integrante, link: &Link<'_>) -> Vec<Finding> {
     ] {
         findings.push(line(name, stage_outcome(party, &inbound, stage, now)));
     }
+    findings.extend(code_findings(party, link));
     findings
+}
+
+/// Tabla 12, written here and not taken from `integrante_may_send`.
+/// IR Beneficiario: AC04, AC01, AC06, AC05, AC07. Todos: DT01.
+const BENEFICIARY_INTEGRANTE: &[&str] = &["AC04", "AC01", "AC06", "AC05", "AC07", "DT01"];
+
+fn code_findings(party: &mut impl Integrante, link: &Link<'_>) -> Vec<Finding> {
+    ReasonCode::ALL.into_iter().map(|code| line(format!("código {code}"), judge(party, link, code))).collect()
+}
+
+fn judge(party: &mut impl Integrante, link: &Link<'_>, code: ReasonCode) -> Outcome {
+    let allowed = BENEFICIARY_INTEGRANTE.contains(&code.code());
+    let order = example_order(link.red.bic(), link.integrante, link.now);
+    let envelope = link.red.seal(link.integrante, &order);
+    match party.on_order(&envelope, Decision::Reject(code), link.now) {
+        Ok(Reply::Confirmation(reply)) => {
+            let mut trust = Keyring::default();
+            if trust.trust(link.integrante, link.integrante_key).is_err() {
+                return Outcome::Failed;
+            }
+            let Ok(message) = open_message(&trust, &reply) else { return Outcome::Failed };
+            let Document::StatusReport(report) = &message.document else { return Outcome::Failed };
+            if allowed && report.reason == Some(ReceivedReason::Listed(code)) {
+                Outcome::Allowed
+            } else {
+                Outcome::Failed
+            }
+        }
+        Err(Fault::Profile(_)) if !allowed => Outcome::NotAllowed,
+        _ => Outcome::Failed,
+    }
 }
 
 fn stage_outcome(party: &mut impl Integrante, inbound: &Envelope, stage: Stage, now: Timestamp) -> Outcome {
@@ -332,13 +364,18 @@ pub fn render(findings: &[Finding]) -> String {
     let mut out = String::from(
         "Informe de conformidad del enlace\n\
          \n\
-         No está afiliado al Banco Central del Ecuador ni respaldado por él.\n\
+         Este proyecto es independiente; no está afiliado al Banco Central del Ecuador ni cuenta con su respaldo.\n\
          \n\
-         Perfil del enlace entre un integrante y su red de pagos. Las reglas citan el Catálogo Operacional. \
-         Los 60 segundos son la ventana del cliente para confirmar, después de resolver la llave y antes de que exista la orden. \
-         Los 20 segundos son el tope de la orden, desde el inicio hasta la confirmación. \
-         Los demás tiempos de cada etapa son parámetros: el catálogo no publica los valores. \
+         Perfil del enlace entre un integrante y su red de pagos. Las reglas provienen del Catálogo Operacional. \
+         Los 60 segundos son el plazo del cliente para confirmar, después de resolver la llave y antes de que exista la orden. \
+         Los 20 segundos son el plazo máximo de la orden, desde el inicio hasta la confirmación. \
+         Los tiempos de cada etapa son parametrizables (§5 regla 13); el catálogo no publica sus valores. \
          Si se agota el tiempo de la acreditación, el catálogo no dice qué ocurre y el integrante no confirma.\n\
+         \n\
+         Supuestos: los plazos de etapa de este informe son 3 s hasta el SIP, 3 s de entrega, \
+         10 s de confirmación de la red beneficiaria, 3 s de aviso a la red ordenante y 8 s de acreditación. \
+         Una correlación que no cita la orden es CH16. Si se agota la acreditación, el integrante no confirma. \
+         La confirmación del integrante solo puede ser ACSP.\n\
          \n",
     );
     for finding in findings {

@@ -13,7 +13,7 @@ const TABLA_1: &str = "Catálogo Operacional, §3.1, Tabla 1";
 #[command(
     name = "veinte",
     about = "Valida mensajes, explica códigos y revisa identificadores.",
-    long_about = "Valida mensajes ISO 20022, explica códigos de la Tabla 12 y revisa identificadores de pago y tipos de llave.\n\nNo está afiliado al Banco Central del Ecuador ni respaldado por él.",
+    long_about = "Valida mensajes ISO 20022, explica códigos de la Tabla 12 y revisa identificadores de pago y tipos de llave.\n\nEste proyecto es independiente; no está afiliado al Banco Central del Ecuador ni cuenta con su respaldo.",
     arg_required_else_help = true
 )]
 struct Cli {

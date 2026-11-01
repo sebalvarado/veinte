@@ -193,10 +193,11 @@ pub fn correlate(order: &CreditTransfer, report: &StatusReport) -> Result<(), Pr
 
 /// Whether an integrante may put this confirmation on the link.
 ///
-/// [assumption] A rejection carries a Tabla 12 code the integrante is responsible for.
-/// An unlisted code, or a code assigned to the SIP, is `CH16`. A confirmation that is not a
-/// rejection carries no code. `AM02` is not judged here: §5 regla 8 leaves the maximum amount
-/// as a parameter and does not publish it.
+/// [assumption] §11.3 paso 8 says only "confirmación exitosa". This profile accepts `ACSP`
+/// for that confirmation, and `RJCT` with a Tabla 12 code the integrante is responsible for.
+/// `ACSC`, `PDNG` and `RCVD` belong to the SIP or to settlement (Tabla 11). An unlisted code,
+/// or a code assigned to the SIP, is `CH16`. `AM02` is not judged here: §5 regla 8 leaves the
+/// maximum amount as a parameter and does not publish it.
 pub fn integrante_report(report: &StatusReport) -> Result<(), ProfileError> {
     match (report.status, report.reason) {
         (PaymentState::Rjct, Some(ReceivedReason::Listed(code))) if integrante_may_send(code) => Ok(()),
@@ -204,8 +205,11 @@ pub fn integrante_report(report: &StatusReport) -> Result<(), ProfileError> {
             Err(refused(ReasonCode::Ch16, format!("the integrante does not send {reason}")))
         }
         (PaymentState::Rjct, None) => Err(refused(ReasonCode::Ch21, "a rejection needs a reason")),
-        (_, None) => Ok(()),
-        (_, Some(reason)) => Err(refused(ReasonCode::Ch16, format!("a confirmation carries no reason, got {reason}"))),
+        (PaymentState::Acsp, None) => Ok(()),
+        (PaymentState::Acsp, Some(reason)) => {
+            Err(refused(ReasonCode::Ch16, format!("a confirmation carries no reason, got {reason}")))
+        }
+        (status, _) => Err(refused(ReasonCode::Ch16, format!("the integrante confirms with ACSP, got {status}"))),
     }
 }
 
@@ -256,6 +260,18 @@ mod tests {
         assert_eq!(integrante_report(&unlisted).unwrap_err().reason, ReasonCode::Ch16);
         assert!(integrante_may_send(ReasonCode::Dt01));
         assert!(!integrante_may_send(ReasonCode::Am04));
+    }
+
+    #[test]
+    fn the_integrante_confirms_only_with_acsp() {
+        let (order_msg, _) = sample::order();
+        let Document::CreditTransfer(order) = &order_msg.document else { unreachable!() };
+        assert!(integrante_report(&report_for(order, None)).is_ok());
+        for status in [PaymentState::Acsc, PaymentState::Pdng, PaymentState::Rcvd] {
+            let mut report = report_for(order, None);
+            report.status = status;
+            assert!(integrante_report(&report).is_err(), "{status} is not the integrante's confirmation");
+        }
     }
 
     #[test]

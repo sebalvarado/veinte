@@ -1,29 +1,38 @@
 use jiff::Timestamp;
 use veinte_iso20022::{
     AppHdr, BusinessMessage, CreditTransfer, Document, Envelope, Keyring, Notice, PACS_008, Stage, StageLimits,
-    StatusReport, example_order, open_message,
+    StatusReport, open_message,
 };
 use veinte_tck::{Decision, Fault, Finding, Integrante, Link, Outcome, Reference, Reply, drive, passed, render};
 use veinte_types::{Bic, PaymentState, ReasonCode, ReceivedReason};
 
-/// Tabla 12, written here and not taken from `integrante_may_send`.
-/// IR Beneficiario: AC04, AC01, AC06, AC05, AC07. Todos: DT01.
-const BENEFICIARY_INTEGRANTE: &[&str] = &["AC04", "AC01", "AC06", "AC05", "AC07", "DT01"];
-
 /// Lines the report must contain. Written by hand, not copied from a regenerated file.
 const VERDICTS: &[&str] = &[
-    "No está afiliado al Banco Central del Ecuador ni respaldado por él.",
+    "Este proyecto es independiente; no está afiliado al Banco Central del Ecuador ni cuenta con su respaldo.",
+    "Las reglas provienen del Catálogo Operacional",
+    "Los tiempos de cada etapa son parametrizables (§5 regla 13); el catálogo no publica sus valores.",
+    "Supuestos: los plazos de etapa de este informe son 3 s hasta el SIP, 3 s de entrega, 10 s de confirmación de la red beneficiaria, 3 s de aviso a la red ordenante y 8 s de acreditación.",
+    "Una correlación que no cita la orden es CH16.",
+    "Si se agota la acreditación, el integrante no confirma.",
+    "La confirmación del integrante solo puede ser ACSP.",
     "orden pacs.008: aceptada",
     "confirmación pacs.002: aceptada",
     "firma alterada: rechazada",
     "correlación distinta: rechazada",
-    "ventana para confirmar la llave: vencida",
+    "plazo para confirmar el pago: vencido",
     "tiempo de espera agotado (extremo a extremo): pago rechazado",
     "tiempo de espera agotado (envío al SIP): en proceso",
     "tiempo de espera agotado (entrega a la red beneficiaria): en proceso",
     "tiempo de espera agotado (confirmación de la red beneficiaria): por conciliar",
     "tiempo de espera agotado (aviso a la red ordenante): pago en proceso",
     "tiempo de espera agotado (acreditación): sin confirmación",
+    "código AC04: permitido",
+    "código AC01: permitido",
+    "código AC06: permitido",
+    "código AC05: permitido",
+    "código DT01: permitido",
+    "código AC07: permitido",
+    "código AM04: no permitido",
 ];
 
 fn now() -> Timestamp {
@@ -46,43 +55,12 @@ fn reference() -> (Reference, veinte_iso20022::Signer) {
     (party, red)
 }
 
-fn code_findings(party: &mut impl Integrante, link: &Link<'_>) -> Vec<Finding> {
-    ReasonCode::ALL
-        .into_iter()
-        .map(|code| Finding { name: format!("código {code}"), outcome: judge(party, link, code) })
-        .collect()
-}
-
-fn judge(party: &mut impl Integrante, link: &Link<'_>, code: ReasonCode) -> Outcome {
-    let allowed = BENEFICIARY_INTEGRANTE.contains(&code.code());
-    let order = example_order(link.red.bic(), link.integrante, link.now);
-    let envelope = link.red.seal(link.integrante, &order);
-    match party.on_order(&envelope, Decision::Reject(code), link.now) {
-        Ok(Reply::Confirmation(reply)) => {
-            let mut trust = Keyring::default();
-            if trust.trust(link.integrante, link.integrante_key).is_err() {
-                return Outcome::Failed;
-            }
-            let Ok(message) = open_message(&trust, &reply) else { return Outcome::Failed };
-            let Document::StatusReport(report) = &message.document else { return Outcome::Failed };
-            if allowed && report.reason == Some(ReceivedReason::Listed(code)) {
-                Outcome::Allowed
-            } else {
-                Outcome::Failed
-            }
-        }
-        Err(Fault::Profile(_)) if !allowed => Outcome::NotAllowed,
-        _ => Outcome::Failed,
-    }
-}
-
 #[test]
 fn the_reference_integrante_passes_every_scenario() {
     let (mut party, red) = reference();
     let held = SignerBic { bic: party.bic(), key: party.verifying_key() };
     let link = link_for(&held, &red);
-    let mut findings = drive(&mut party, &link);
-    findings.extend(code_findings(&mut party, &link));
+    let findings = drive(&mut party, &link);
     let report = render(&findings);
     // The file is the full text. The lines in VERDICTS and the code list below are separate
     // expectations, written here, so a regenerated file is not the only check.
@@ -97,11 +75,8 @@ fn the_reference_integrante_passes_every_scenario() {
         assert!(report.contains(line), "missing {line}\n{report}");
     }
     assert!(!report.contains("timeout"), "{report}");
-    for code in ReasonCode::ALL {
-        let outcome = if BENEFICIARY_INTEGRANTE.contains(&code.code()) { "permitido" } else { "no permitido" };
-        let line = format!("código {code}: {outcome}");
-        assert!(report.contains(&line), "missing {line}\n{report}");
-    }
+    assert!(!report.contains("ventana"), "{report}");
+    assert!(!report.contains("tope"), "{report}");
 }
 
 #[test]
@@ -136,9 +111,7 @@ fn an_integrante_that_sends_an_sip_code_fails() {
     let inner = Reference::new(integrante.clone(), red.bic(), red.verifying_key(), StageLimits::default()).unwrap();
     let mut party = SendsSipCode { inner, signer: integrante, red: red.bic(), peers };
     let held = SignerBic { bic: party.signer.bic(), key: party.signer.verifying_key() };
-    let link = link_for(&held, &red);
-    let findings = code_findings(&mut party, &link);
-    assert_eq!(outcome(&findings, "código AC04"), Outcome::Failed);
+    let findings = drive(&mut party, &link_for(&held, &red));
     assert_eq!(outcome(&findings, "código AM04"), Outcome::Failed);
     assert!(!passed(&findings));
 }

@@ -2,7 +2,7 @@ use std::io::{self, Read, Write};
 use std::process::ExitCode;
 
 use clap::{Parser, Subcommand};
-use veinte_iso20022::{BusinessMessage, DecodeError, Document, decode, pretty};
+use veinte_iso20022::{BusinessMessage, Channel, DecodeError, Document, Initiation, decode, pretty};
 use veinte_types::{InvalidValue, LlaveType, PaymentId, ReasonCode, ReceivedReason};
 
 const TABLA_12: &str = "Catálogo Operacional, §5 numeral 7, Tabla 12";
@@ -198,23 +198,60 @@ fn report(message: &BusinessMessage) -> String {
             line(&mut out, "red beneficiaria", transfer.instructed_agent.as_str());
             line(&mut out, "ordenante", &transfer.debtor.name);
             line(&mut out, "identificación del ordenante", &transfer.debtor.id);
+            line(&mut out, "tipo de identificación del ordenante", &transfer.debtor.id_scheme);
             line(&mut out, "cuenta del ordenante", &transfer.debtor.account);
             line(&mut out, "institución ordenante", transfer.debtor_agent.as_str());
             line(&mut out, "beneficiario", &transfer.creditor.name);
             line(&mut out, "identificación del beneficiario", &transfer.creditor.id);
+            line(&mut out, "tipo de identificación del beneficiario", &transfer.creditor.id_scheme);
             line(&mut out, "cuenta del beneficiario", &transfer.creditor.account);
             line(&mut out, "institución beneficiaria", transfer.creditor_agent.as_str());
+            line(&mut out, "canal", &channel_text(transfer.channel));
+            line(&mut out, "forma de iniciación", &initiation_text(transfer.initiation));
+            line(&mut out, "motivo", &transfer.purpose);
+            if let Some(qr) = &transfer.qr {
+                line(&mut out, "código QR", qr);
+            }
         }
         Document::StatusReport(report) => {
             line(&mut out, "identificador del mensaje", &report.msg_id);
             line(&mut out, "fecha de la confirmación", &report.created.to_string());
+            line(&mut out, "institución beneficiaria", report.beneficiary_agent.as_str());
+            line(&mut out, "mensaje de la orden", &report.original_msg_id);
+            line(&mut out, "definición de la orden", &report.original_msg_name);
             line(&mut out, "identificador de la orden", &report.original_instr_id);
-            line(&mut out, "institución ordenante", report.original_debtor_agent.as_str());
+            line(&mut out, "identificador de extremo a extremo", &report.original_end_to_end_id);
+            let ordering = report
+                .original_instr_id
+                .parse::<PaymentId>()
+                .map(|id| id.ordering().to_string())
+                .unwrap_or_else(|_| "—".into());
+            line(&mut out, "institución ordenante", &ordering);
             line(&mut out, "estado", report.status.code());
             line(&mut out, "motivo", &reason_text(report.reason.as_ref()));
+            if let Some(detail) = &report.detail {
+                line(&mut out, "detalle", detail);
+            }
         }
     }
     out
+}
+
+fn channel_text(channel: Channel) -> String {
+    let name = match channel {
+        Channel::Web => "Web",
+        Channel::App => "APP",
+    };
+    format!("{channel} ({name})")
+}
+
+fn initiation_text(initiation: Initiation) -> String {
+    let name = match initiation {
+        Initiation::Llave => "Pago iniciado con Llave",
+        Initiation::Credential => "Pago iniciado con credencial",
+        Initiation::Qr => "Pago iniciado con QR",
+    };
+    format!("{initiation} ({name})")
 }
 
 fn reason_text(reason: Option<&ReceivedReason>) -> String {

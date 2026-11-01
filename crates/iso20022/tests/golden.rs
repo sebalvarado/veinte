@@ -22,7 +22,7 @@ fn credit_transfer() -> BusinessMessage {
             created: at(),
             possible_duplicate: false,
         },
-        document: Document::CreditTransfer(CreditTransfer {
+        document: Document::CreditTransfer(Box::new(CreditTransfer {
             msg_id: "M0000000000000000000000000000001".into(),
             created: at(),
             instr_id: "BALFECEQ12102026090000000001".into(),
@@ -33,12 +33,24 @@ fn credit_transfer() -> BusinessMessage {
             debtor: Party {
                 name: "María Ejemplo & Hijos".into(),
                 id: "0000000001".into(),
+                // [assumption] Tabla 16 requires the scheme code and does not list one. NIDN is only an example.
+                id_scheme: "NIDN".into(),
                 account: "1100000001".into(),
             },
             debtor_agent: bic("BALFECEQ"),
-            creditor: Party { name: "Julio Tienda".into(), id: "0000000002".into(), account: "4400000001".into() },
+            creditor: Party {
+                name: "Julio Tienda".into(),
+                id: "0000000002".into(),
+                id_scheme: "NIDN".into(),
+                account: "4400000001".into(),
+            },
             creditor_agent: bic("CBETECEQ"),
-        }),
+            channel: veinte_iso20022::Channel::Web,
+            initiation: veinte_iso20022::Initiation::Credential,
+            purpose: "abono".into(),
+            qr: None,
+            marked_at: None,
+        })),
     }
 }
 
@@ -54,10 +66,38 @@ fn status_report() -> BusinessMessage {
         document: Document::StatusReport(StatusReport {
             msg_id: "M0000000000000000000000000000002".into(),
             created: at(),
+            beneficiary_agent: bic("CBETECEQ"),
+            original_msg_id: "M0000000000000000000000000000001".into(),
+            original_msg_name: veinte_iso20022::PACS_008.into(),
             original_instr_id: "BALFECEQ12102026090000000001".into(),
-            original_debtor_agent: bic("BALFECEQ"),
+            original_end_to_end_id: "BALFECEQ12102026090000000001".into(),
             status: PaymentState::Rjct,
             reason: Some(ReceivedReason::Listed(ReasonCode::Am04)),
+            detail: Some(ReasonCode::Am04.description().into()),
+        }),
+    }
+}
+
+fn accepted() -> BusinessMessage {
+    BusinessMessage {
+        header: AppHdr {
+            from: bic("CBETECEQ"),
+            to: bic("RBETECEQ"),
+            id: "M0000000000000000000000000000003".into(),
+            created: at(),
+            possible_duplicate: false,
+        },
+        document: Document::StatusReport(StatusReport {
+            msg_id: "M0000000000000000000000000000003".into(),
+            created: at(),
+            beneficiary_agent: bic("CBETECEQ"),
+            original_msg_id: "M0000000000000000000000000000001".into(),
+            original_msg_name: veinte_iso20022::PACS_008.into(),
+            original_instr_id: "BALFECEQ12102026090000000001".into(),
+            original_end_to_end_id: "E2E0000000000000000000000000001".into(),
+            status: PaymentState::Acsp,
+            reason: None,
+            detail: None,
         }),
     }
 }
@@ -84,6 +124,11 @@ fn pacs002_matches_its_golden_file() {
     golden("pacs002.xml", &status_report());
 }
 
+#[test]
+fn pacs002_acceptance_matches_its_golden_file() {
+    golden("pacs002-acsp.xml", &accepted());
+}
+
 fn reason_of(xml: &str) -> ReasonCode {
     decode(xml.as_bytes()).unwrap_err().reason
 }
@@ -96,6 +141,13 @@ fn malformed_messages_map_to_tabla_12_codes() {
     assert_eq!(reason_of(&xml.replace(">25.40<", ">25.405<")), ReasonCode::Ch20);
     assert_eq!(reason_of(&xml.replace("</BizMsg>", "")), ReasonCode::Ff02);
     assert_eq!(reason_of(&xml.replace("pacs.008.001.08</MsgDefIdr>", "camt.056.001.08</MsgDefIdr>")), ReasonCode::Ch16);
+    assert_eq!(reason_of(&xml.replace("<NbOfTxs>1</NbOfTxs>", "<NbOfTxs>2</NbOfTxs>")), ReasonCode::Ds0k);
+    assert_eq!(reason_of(&xml.replace(">25.40<", ">0.00<")), ReasonCode::Am01);
+    assert_eq!(reason_of(&xml.replace("<PssblDplct>false</PssblDplct>", "")), ReasonCode::Ch21);
+    assert_eq!(
+        reason_of(&xml.replace("<InstrId>BALFECEQ12102026090000000001</InstrId>", "<InstrId>NOTANID</InstrId>",)),
+        ReasonCode::Ms01
+    );
 }
 
 proptest! {

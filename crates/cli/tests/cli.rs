@@ -50,6 +50,11 @@ fn validar_prints_the_pacs002_fields() {
 }
 
 #[test]
+fn validar_prints_an_accepted_payment() {
+    assert_ok(&run(&["validar", iso("pacs002-acsp.xml").to_str().unwrap()]), "validar-pacs002-acsp.txt");
+}
+
+#[test]
 fn validar_reads_stdin() {
     let bytes = fs::read(iso("pacs008.xml")).unwrap();
     assert_ok(&run_stdin(&["validar", "-"], &bytes), "validar-pacs008.txt");
@@ -79,7 +84,11 @@ fn validar_reports_an_unsupported_acmt_message() {
 
 #[test]
 fn formatear_pretty_prints_the_golden_messages() {
-    for (input, expected) in [("pacs008.xml", "formatear-pacs008.xml"), ("pacs002.xml", "formatear-pacs002.xml")] {
+    for (input, expected) in [
+        ("pacs008.xml", "formatear-pacs008.xml"),
+        ("pacs002.xml", "formatear-pacs002.xml"),
+        ("pacs002-acsp.xml", "formatear-pacs002-acsp.xml"),
+    ] {
         let out = run(&["formatear", iso(input).to_str().unwrap()]);
         assert!(out.status.success(), "{}", String::from_utf8_lossy(&out.stderr));
         let path = Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/golden").join(expected);

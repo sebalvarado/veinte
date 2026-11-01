@@ -24,3 +24,4 @@ jiff = { version = "0.2", default-features = false, features = ["std"] }
 proptest = "1"
 quick-xml = "0.42"
 clap = "4"
+ed25519-dalek = "2"

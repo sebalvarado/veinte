@@ -1,0 +1,37 @@
+Informe de conformidad del enlace
+
+Independiente. No está afiliado ni respaldado por el Banco Central del Ecuador.
+
+Perfil del enlace entre un integrante y su red de pagos. Las reglas citan el Catálogo Operacional. Los tiempos de 60 s y 20 s son los del catálogo. Los demás tiempos de etapa son parámetros: el catálogo no publica los valores.
+
+orden pacs.008: aceptada
+confirmación pacs.002: aceptada
+firma alterada: rechazada
+correlación distinta: rechazada
+timeout resolución de la llave: DT01
+timeout extremo a extremo: DT01
+timeout envío al SIP: DT01
+timeout entrega a la red beneficiaria: DT01
+timeout confirmación de la red beneficiaria: DT01
+timeout acreditación: DT01
+código AC04: permitido
+código AC01: permitido
+código AC06: permitido
+código AC05: permitido
+código DT01: permitido
+código AC07: permitido
+código AM04: no permitido
+código MS01: no permitido
+código AM11: no permitido
+código CH16: no permitido
+código CH21: no permitido
+código DT02: no permitido
+código DS0K: no permitido
+código CH20: no permitido
+código AM01: no permitido
+código DU01: no permitido
+código AM02: no permitido
+código AC02: no permitido
+código TA01: no permitido
+código FF10: no permitido
+código FF02: no permitido

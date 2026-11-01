@@ -11,6 +11,8 @@ publish.workspace = true
 veinte-types.workspace = true
 jiff.workspace = true
 quick-xml.workspace = true
+ed25519-dalek.workspace = true
+getrandom.workspace = true
 
 [dev-dependencies]
 proptest.workspace = true

@@ -18,6 +18,7 @@
     <BizMsgIdr>M0000000000000000000000000000001</BizMsgIdr>
     <MsgDefIdr>pacs.008.001.08</MsgDefIdr>
     <CreDt>2026-10-12T09:00:00.250000-05:00</CreDt>
+    <PssblDplct>false</PssblDplct>
   </AppHdr>
   <Document xmlns="urn:iso:std:iso:20022:tech:xsd:pacs.008.001.08">
     <FIToFICstmrCdtTrf>
@@ -52,6 +53,9 @@
             <PrvtId>
               <Othr>
                 <Id>0000000001</Id>
+                <SchmeNm>
+                  <Cd>NIDN</Cd>
+                </SchmeNm>
               </Othr>
             </PrvtId>
           </Id>
@@ -79,6 +83,9 @@
             <PrvtId>
               <Othr>
                 <Id>0000000002</Id>
+                <SchmeNm>
+                  <Cd>NIDN</Cd>
+                </SchmeNm>
               </Othr>
             </PrvtId>
           </Id>
@@ -90,6 +97,15 @@
             </Othr>
           </Id>
         </CdtrAcct>
+        <InstrForCdtrAgt>
+          <InstrInf>0001</InstrInf>
+        </InstrForCdtrAgt>
+        <InstrForNxtAgt>
+          <InstrInf>Cred</InstrInf>
+        </InstrForNxtAgt>
+        <Purp>
+          <Prtry>abono</Prtry>
+        </Purp>
       </CdtTrfTxInf>
     </FIToFICstmrCdtTrf>
   </Document>

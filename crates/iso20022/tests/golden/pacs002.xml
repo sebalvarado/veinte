@@ -25,14 +25,25 @@
       <GrpHdr>
         <MsgId>M0000000000000000000000000000002</MsgId>
         <CreDtTm>2026-10-12T09:00:00.250000-05:00</CreDtTm>
+        <InstgAgt>
+          <FinInstnId>
+            <BICFI>CBETECEQ</BICFI>
+          </FinInstnId>
+        </InstgAgt>
       </GrpHdr>
+      <OrgnlGrpInfAndSts>
+        <OrgnlMsgId>M0000000000000000000000000000001</OrgnlMsgId>
+        <OrgnlMsgNmId>pacs.008.001.08</OrgnlMsgNmId>
+      </OrgnlGrpInfAndSts>
       <TxInfAndSts>
         <OrgnlInstrId>BALFECEQ12102026090000000001</OrgnlInstrId>
+        <OrgnlEndToEndId>BALFECEQ12102026090000000001</OrgnlEndToEndId>
         <TxSts>RJCT</TxSts>
         <StsRsnInf>
           <Rsn>
             <Cd>AM04</Cd>
           </Rsn>
+          <AddtlInf>0207 (INSUFICIENCIA DE FONDOS)</AddtlInf>
         </StsRsnInf>
         <OrgnlTxRef>
           <DbtrAgt>

@@ -1,0 +1,38 @@
+Informe de conformidad del enlace
+
+No está afiliado al Banco Central del Ecuador ni respaldado por él.
+
+Perfil del enlace entre un integrante y su red de pagos. Las reglas citan el Catálogo Operacional. Los 60 segundos son la ventana del cliente para confirmar, después de resolver la llave y antes de que exista la orden. Los 20 segundos son el tope de la orden, desde el inicio hasta la confirmación. Los demás tiempos de cada etapa son parámetros: el catálogo no publica los valores. Si se agota el tiempo de la acreditación, el catálogo no dice qué ocurre y el integrante no confirma.
+
+orden pacs.008: aceptada
+confirmación pacs.002: aceptada
+firma alterada: rechazada
+correlación distinta: rechazada
+ventana para confirmar la llave: vencida
+tiempo de espera agotado (extremo a extremo): pago rechazado
+tiempo de espera agotado (envío al SIP): en proceso
+tiempo de espera agotado (entrega a la red beneficiaria): en proceso
+tiempo de espera agotado (confirmación de la red beneficiaria): por conciliar
+tiempo de espera agotado (aviso a la red ordenante): pago en proceso
+tiempo de espera agotado (acreditación): sin confirmación
+código AC04: permitido
+código AC01: permitido
+código AC06: permitido
+código AC05: permitido
+código DT01: permitido
+código AC07: permitido
+código AM04: no permitido
+código MS01: no permitido
+código AM11: no permitido
+código CH16: no permitido
+código CH21: no permitido
+código DT02: no permitido
+código DS0K: no permitido
+código CH20: no permitido
+código AM01: no permitido
+código DU01: no permitido
+código AM02: no permitido
+código AC02: no permitido
+código TA01: no permitido
+código FF10: no permitido
+código FF02: no permitido

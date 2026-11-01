@@ -1,0 +1,17 @@
+[package]
+name = "veinte-tck"
+description = "Conformance scenarios for the link between an integrante and its red."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+publish.workspace = true
+
+[dependencies]
+veinte-types.workspace = true
+veinte-iso20022.workspace = true
+jiff.workspace = true
+
+[lints]
+workspace = true

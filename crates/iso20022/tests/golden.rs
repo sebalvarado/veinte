@@ -2,7 +2,7 @@ use std::path::PathBuf;
 
 use jiff::Timestamp;
 use proptest::prelude::*;
-use veinte_iso20022::{AppHdr, BusinessMessage, CreditTransfer, Document, Party, StatusReport, decode, encode, pretty};
+use veinte_iso20022::{AppHdr, BusinessMessage, Document, StatusReport, decode, encode, pretty};
 use veinte_types::{Bic, PaymentState, ReasonCode, ReceivedReason, Usd};
 
 fn bic(s: &str) -> Bic {
@@ -14,32 +14,8 @@ fn at() -> Timestamp {
 }
 
 fn credit_transfer() -> BusinessMessage {
-    BusinessMessage {
-        header: AppHdr {
-            from: bic("RALFECEQ"),
-            to: bic("SIPCECEQ"),
-            id: "M0000000000000000000000000000001".into(),
-            created: at(),
-            possible_duplicate: false,
-        },
-        document: Document::CreditTransfer(CreditTransfer {
-            msg_id: "M0000000000000000000000000000001".into(),
-            created: at(),
-            instr_id: "BALFECEQ12102026090000000001".into(),
-            end_to_end_id: "BALFECEQ12102026090000000001".into(),
-            amount: "25.40".parse().unwrap(),
-            instructing_agent: bic("RALFECEQ"),
-            instructed_agent: bic("RBETECEQ"),
-            debtor: Party {
-                name: "María Ejemplo & Hijos".into(),
-                id: "0000000001".into(),
-                account: "1100000001".into(),
-            },
-            debtor_agent: bic("BALFECEQ"),
-            creditor: Party { name: "Julio Tienda".into(), id: "0000000002".into(), account: "4400000001".into() },
-            creditor_agent: bic("CBETECEQ"),
-        }),
-    }
+    // [assumption] Tabla 16 requires the scheme code and does not list one. NIDN is only an example.
+    veinte_iso20022::example_order(bic("RALFECEQ"), bic("SIPCECEQ"), at())
 }
 
 fn status_report() -> BusinessMessage {
@@ -54,15 +30,49 @@ fn status_report() -> BusinessMessage {
         document: Document::StatusReport(StatusReport {
             msg_id: "M0000000000000000000000000000002".into(),
             created: at(),
+            beneficiary_agent: bic("CBETECEQ"),
+            original_msg_id: "M0000000000000000000000000000001".into(),
+            original_msg_name: veinte_iso20022::PACS_008.into(),
             original_instr_id: "BALFECEQ12102026090000000001".into(),
-            original_debtor_agent: bic("BALFECEQ"),
+            original_end_to_end_id: "BALFECEQ12102026090000000001".into(),
+            original_debtor_agent: Some(bic("BALFECEQ")),
             status: PaymentState::Rjct,
             reason: Some(ReceivedReason::Listed(ReasonCode::Am04)),
+            detail: Some(ReasonCode::Am04.description().into()),
         }),
     }
 }
 
-fn golden(name: &str, message: &BusinessMessage) {
+fn accepted() -> BusinessMessage {
+    BusinessMessage {
+        header: AppHdr {
+            from: bic("CBETECEQ"),
+            to: bic("RBETECEQ"),
+            id: "M0000000000000000000000000000003".into(),
+            created: at(),
+            possible_duplicate: false,
+        },
+        document: Document::StatusReport(StatusReport {
+            msg_id: "M0000000000000000000000000000003".into(),
+            created: at(),
+            beneficiary_agent: bic("CBETECEQ"),
+            original_msg_id: "M0000000000000000000000000000001".into(),
+            original_msg_name: veinte_iso20022::PACS_008.into(),
+            original_instr_id: "BALFECEQ12102026090000000001".into(),
+            original_end_to_end_id: "E2E0000000000000000000000000001".into(),
+            original_debtor_agent: None,
+            status: PaymentState::Acsp,
+            reason: None,
+            detail: None,
+        }),
+    }
+}
+
+/// The file is checked twice, and neither check is the other one's output.
+/// The encoder's bytes are compared with the file on disk. Then the file itself, not the
+/// encoder's buffer, is decoded and compared with the struct. `marker` is a fragment written
+/// by hand: a file that only round-trips still has to contain it.
+fn golden(name: &str, message: &BusinessMessage, marker: &str) {
     let path = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests/golden").join(name);
     let encoded = pretty(&encode(message)).into_bytes();
     if std::env::var_os("UPDATE_GOLDEN").is_some() {
@@ -70,18 +80,29 @@ fn golden(name: &str, message: &BusinessMessage) {
     }
     let expected =
         std::fs::read(&path).unwrap_or_else(|_| panic!("{} missing: run with UPDATE_GOLDEN=1", path.display()));
-    assert_eq!(String::from_utf8(encoded).unwrap(), String::from_utf8(expected.clone()).unwrap());
+    let file = String::from_utf8(expected.clone()).unwrap();
+    assert_eq!(String::from_utf8(encoded).unwrap(), file);
     assert_eq!(&decode(&expected).unwrap(), message);
+    assert!(file.contains(marker), "{name} is missing {marker}");
 }
 
 #[test]
 fn pacs008_matches_its_golden_file() {
-    golden("pacs008.xml", &credit_transfer());
+    golden("pacs008.xml", &credit_transfer(), "María Ejemplo &amp; Hijos");
 }
 
 #[test]
 fn pacs002_matches_its_golden_file() {
-    golden("pacs002.xml", &status_report());
+    golden("pacs002.xml", &status_report(), "<OrgnlTxRef>");
+}
+
+#[test]
+fn pacs002_acceptance_matches_its_golden_file() {
+    let message = accepted();
+    golden("pacs002-acsp.xml", &message, "<TxSts>ACSP</TxSts>");
+    let file = std::fs::read_to_string(PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests/golden/pacs002-acsp.xml"))
+        .unwrap();
+    assert!(!file.contains("OrgnlTxRef"), "an acceptance without the ordering integrante must omit it");
 }
 
 fn reason_of(xml: &str) -> ReasonCode {
@@ -96,6 +117,13 @@ fn malformed_messages_map_to_tabla_12_codes() {
     assert_eq!(reason_of(&xml.replace(">25.40<", ">25.405<")), ReasonCode::Ch20);
     assert_eq!(reason_of(&xml.replace("</BizMsg>", "")), ReasonCode::Ff02);
     assert_eq!(reason_of(&xml.replace("pacs.008.001.08</MsgDefIdr>", "camt.056.001.08</MsgDefIdr>")), ReasonCode::Ch16);
+    assert_eq!(reason_of(&xml.replace("<NbOfTxs>1</NbOfTxs>", "<NbOfTxs>2</NbOfTxs>")), ReasonCode::Ds0k);
+    assert_eq!(reason_of(&xml.replace(">25.40<", ">0.00<")), ReasonCode::Am01);
+    assert_eq!(reason_of(&xml.replace("<PssblDplct>false</PssblDplct>", "")), ReasonCode::Ch21);
+    assert_eq!(
+        reason_of(&xml.replace("<InstrId>BALFECEQ12102026090000000001</InstrId>", "<InstrId>NOTANID</InstrId>",)),
+        ReasonCode::Ms01
+    );
 }
 
 proptest! {

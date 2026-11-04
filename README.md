@@ -9,8 +9,9 @@ Open tooling for Ecuador's real-time payments standard: the scheme's vocabulary 
 | Crate | What it does |
 |---|---|
 | [`veinte-types`](crates/types) | The Catálogo Operacional's vocabulary as validated types: amounts in USD, BICs, payment ids (Tabla 14), payment states, the Tabla 12 reason codes, llave types, and the business calendar |
-| [`veinte-iso20022`](crates/iso20022) | Encoding and decoding of `head.001.001.04`, `pacs.008.001.08` and `pacs.002.001.10`, with malformed input mapped to Tabla 12 codes |
+| [`veinte-iso20022`](crates/iso20022) | Encoding and decoding of `head.001.001.04`, `pacs.008.001.08` and `pacs.002.001.10`, and the link profile an integrante speaks with its red: signature, correlation, stage limits, and which Tabla 12 codes it may send |
 | [`veinte-cli`](crates/cli) | The `veinte` command: validate and pretty-print a message, explain a Tabla 12 code, and check a payment id or a llave type |
+| [`veinte-tck`](crates/tck) | The conformance kit: it drives any integrante through the link profile and writes a Spanish report |
 
 ## Command line
 
@@ -24,11 +25,9 @@ veinte explicar AC04
 veinte id revisar BALFECEQ10102026093000A1B2C3
 ```
 
-Coming next, in this repository:
+The message profile is ours, marked **[assumption]**, until the BCE publishes the catálogo técnico. Every rule cites the catálogo section it comes from. Llave messages named in §11.1 (`acmt.998`) are between a red and the SIP; their fields are unpublished, so this link does not carry them. The 60 seconds of §5 regla 3 are the customer's window to confirm after the llave is resolved, before any order exists. The 20 seconds of §5 regla 4 are the ceiling of the payment itself. The other stage limits are parameters.
 
-- **`tck`, the conformance kit.** It impersonates the counterparty, drives your implementation through the catálogo's scenarios, and writes a Spanish report you can hand to your red.
-
-The message profile is ours, marked **[assumption]**, until the BCE publishes the catálogo técnico. Every rule cites the catálogo section it comes from.
+`veinte-tck` writes a Spanish report of the scenarios. Hand that report to your red.
 
 ## Use it
 

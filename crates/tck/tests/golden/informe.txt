@@ -1,0 +1,40 @@
+Informe de conformidad del enlace
+
+Este proyecto es independiente; no está afiliado al Banco Central del Ecuador ni cuenta con su respaldo.
+
+Perfil del enlace entre un integrante y su red de pagos. Las reglas provienen del Catálogo Operacional. Los 60 segundos son el plazo del cliente para confirmar, después de resolver la llave y antes de que exista la orden. Los 20 segundos son el plazo máximo de la orden, desde el inicio hasta la confirmación. Los tiempos de cada etapa son parametrizables (§5 regla 13); el catálogo no publica sus valores. Si se agota el tiempo de la acreditación, el catálogo no dice qué ocurre y el integrante no confirma.
+
+Supuestos: los plazos de etapa de este informe son 3 s hasta el SIP, 3 s de entrega, 10 s de confirmación de la red beneficiaria, 3 s de aviso a la red ordenante y 8 s de acreditación. Una correlación que no cita la orden es CH16. Si se agota la acreditación, el integrante no confirma. La confirmación del integrante solo puede ser ACSP.
+
+orden pacs.008: aceptada
+confirmación pacs.002: aceptada
+firma alterada: rechazada
+correlación distinta: rechazada
+plazo para confirmar el pago: vencido
+tiempo de espera agotado (extremo a extremo): pago rechazado
+tiempo de espera agotado (envío al SIP): en proceso
+tiempo de espera agotado (entrega a la red beneficiaria): en proceso
+tiempo de espera agotado (confirmación de la red beneficiaria): por conciliar
+tiempo de espera agotado (aviso a la red ordenante): pago en proceso
+tiempo de espera agotado (acreditación): sin confirmación
+código AC04: permitido
+código AC01: permitido
+código AC06: permitido
+código AC05: permitido
+código DT01: permitido
+código AC07: permitido
+código AM04: no permitido
+código MS01: no permitido
+código AM11: no permitido
+código CH16: no permitido
+código CH21: no permitido
+código DT02: no permitido
+código DS0K: no permitido
+código CH20: no permitido
+código AM01: no permitido
+código DU01: no permitido
+código AM02: no permitido
+código AC02: no permitido
+código TA01: no permitido
+código FF10: no permitido
+código FF02: no permitido

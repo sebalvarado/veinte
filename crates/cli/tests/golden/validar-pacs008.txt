@@ -13,9 +13,14 @@ red ordenante: RALFECEQ
 red beneficiaria: RBETECEQ
 ordenante: María Ejemplo & Hijos
 identificación del ordenante: 0000000001
+tipo de identificación del ordenante: NIDN
 cuenta del ordenante: 1100000001
 institución ordenante: BALFECEQ
 beneficiario: Julio Tienda
 identificación del beneficiario: 0000000002
+tipo de identificación del beneficiario: NIDN
 cuenta del beneficiario: 4400000001
 institución beneficiaria: CBETECEQ
+canal: 0001 (Web)
+forma de iniciación: Cred (Pago iniciado con credencial)
+motivo: abono
